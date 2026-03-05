@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Growth Project Dashboard</title>
-    <!-- 폰트 로드: 나눔바른고딕 & Montserrat -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sun-typeface/nanumbarungothic@master/nanumbarungothic.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- 필수 라이브러리 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Firebase SDK & 초기화 설정 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -33,31 +30,24 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // React 앱에서 안전하게 사용하기 위한 브릿지
+        // React 앱 브릿지
         window.FirebaseBridge = { db, auth, appId, doc, onSnapshot, setDoc, signInAnonymously, onAuthStateChanged };
     </script>
 
     <style>
         body { font-family: 'Montserrat', 'NanumBarunGothic', sans-serif; background-color: #F0F2F5; margin: 0; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
-        input[type="number"], .font-montserrat { font-family: 'Montserrat', sans-serif; }
-        .text-nanum { font-family: 'NanumBarunGothic', sans-serif; }
+        input[type="number"] { font-family: 'Montserrat', sans-serif; }
     </style>
 </head>
 <body>
-    <div id="root">
-        <div style="display:flex; height:100vh; flex-direction:column; justify-content:center; align-items:center; color:#00C39A; font-weight:bold;">
-            <div style="font-size: 2rem; margin-bottom: 1rem;">L</div>
-            데이터를 안전하게 연결 중입니다...
-        </div>
-    </div>
+    <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useCallback } = React;
 
-        // --- 컴포넌트 외부 정의: 한글 입력 획 분리 버그 해결 ---
+        // 아이콘 (SVG)
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
                 Plus: <path d="M12 5v14M5 12h14" />,
@@ -79,19 +69,18 @@
                 BarChart3: <path d="M3 3v18h18m-12-4V9m4 8V5m4 12v-5" />
             };
             return (
-                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    {icons[name] || null}
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{icons[name] || null}</svg>
             );
         };
 
+        // --- 컴포넌트 분리: 한글 입력 최적화 ---
         const FunnelCard = ({ section, item, isDark, onToggleStatus, onDelete, onStartEdit, isEditing, editValue, setEditValue, editPeriod, setEditPeriod, onSave }) => {
             const statusColors = { '대기': 'bg-gray-100 text-gray-500', '진행 중': 'bg-blue-100 text-blue-600', '진행 완료': 'bg-emerald-100 text-emerald-600', '종료': 'bg-rose-100 text-rose-600' };
             return (
                 <div className={`p-5 rounded-[2.5rem] border transition-all flex flex-col justify-between group relative ${isDark ? 'bg-white/5 border-white/10 hover:border-blue-400/50 shadow-lg' : 'bg-white border-gray-100 shadow-lg hover:border-emerald-200'}`}>
                     <button onClick={() => onDelete(section, item.id)} className="absolute -top-2 -right-2 w-6 h-6 rounded-full shadow-md opacity-0 group-hover:opacity-100 z-20 bg-white text-gray-400 hover:text-rose-500 flex items-center justify-center"><Icon name="X" size={14} /></button>
                     <div>
-                        <div className="flex justify-between items-center mb-4 text-nanum">
+                        <div className="flex justify-between items-center mb-4">
                             <div className="flex flex-col">
                                 <span className={`text-[11px] font-black uppercase tracking-widest ${section === 'retention' ? 'text-blue-300' : 'text-gray-400'}`}>{item.stage}</span>
                                 {!isEditing && item.period && <span className={`text-[9px] font-bold flex items-center gap-1 mt-1 opacity-50`}><Icon name="Clock" size={10} /> {item.period}</span>}
@@ -99,39 +88,19 @@
                             <button onClick={() => onToggleStatus(section, item.id)} className={`text-[8px] px-2.5 py-1 rounded-full font-black ${statusColors[item.status]}`}>{item.status}</button>
                         </div>
                         {isEditing ? (
-                            <div className="space-y-3 mb-4 text-nanum">
+                            <div className="space-y-3 mb-4">
                                 <textarea autoFocus className="w-full text-xs font-bold p-3 rounded-2xl bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 ring-emerald-500" value={editValue} onChange={(e) => setEditValue(e.target.value)} rows="2" />
-                                <input type="text" placeholder="진행 기간" className="w-full text-[10px] font-bold p-2 rounded-xl bg-gray-100 focus:outline-none" value={editPeriod} onChange={(e) => setEditPeriod(e.target.value)} />
-                                <button onClick={() => onSave(section, item.id)} className="w-full py-1.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold">저장하기</button>
+                                <input type="text" placeholder="진행 기간" className="w-full text-[10px] font-bold p-2 rounded-xl bg-gray-100 focus:outline-none" value={editPeriod} onChange={(e) => setEditPeriod(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && onSave(section, item.id)} />
+                                <button onClick={() => onSave(section, item.id)} className="w-full py-1.5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold">변경사항 저장하기</button>
                             </div>
                         ) : (
                             <p className={`text-[13px] font-extrabold mb-5 leading-snug min-h-[3rem] cursor-pointer ${isDark ? 'text-white' : 'text-gray-800'}`} onClick={() => onStartEdit(item.id, item.idea, item.period)}>{item.idea || '클릭하여 전략 입력'}</p>
                         )}
                     </div>
-                    {!isEditing && <button onClick={() => onStartEdit(item.id, item.idea, item.period)} className="w-full py-2 rounded-xl text-[9px] font-black text-gray-400 hover:text-emerald-500 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100"><Icon name="Plus" size={12}/> 편집하기</button>}
+                    {!isEditing && <button onClick={() => onStartEdit(item.id, item.idea, item.period)} className="w-full py-2 rounded-xl text-[9px] font-black text-gray-400 hover:text-emerald-500 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="Plus" size={12}/> 편집</button>}
                 </div>
             );
         };
-
-        const ProjectList = ({ title, items, badgeColor, isFinished = false }) => (
-            <div className="mb-6 last:mb-0">
-                <div className="flex items-center gap-2 mb-3">
-                    <div className={`w-1.5 h-4 rounded-full ${badgeColor}`}></div>
-                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{title}</h4>
-                </div>
-                <div className="space-y-2">
-                    {items.length > 0 ? items.map(p => (
-                        <div key={p.id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-100 hover:bg-white transition-all">
-                            <div className="flex items-center gap-3">
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase ${isFinished ? 'bg-rose-50 text-rose-500 border border-rose-100' : 'bg-white text-gray-400 border border-gray-100'}`}>{p.stage}</span>
-                                <div className="flex flex-col"><span className={`text-[13px] font-bold ${isFinished ? 'text-gray-400 line-through decoration-rose-300' : 'text-gray-700'}`}>{p.idea}</span>{p.period && <span className="text-[9px] text-gray-300 font-bold flex items-center gap-1 mt-0.5"><Icon name="Clock" size={8}/> {p.period}</span>}</div>
-                            </div>
-                            {isFinished ? <Icon name="Check" size={12} className="text-rose-400" /> : <Icon name="ChevronRight" size={12} className="text-gray-200" />}
-                        </div>
-                    )) : <p className="text-[11px] text-gray-300 italic px-4 py-2">프로젝트가 없습니다.</p>}
-                </div>
-            </div>
-        );
 
         const App = () => {
             const [user, setUser] = useState(null);
@@ -142,6 +111,7 @@
             const [editValue, setEditValue] = useState('');
             const [editPeriod, setEditPeriod] = useState('');
 
+            // --- Firebase 실시간 동기화 ---
             useEffect(() => {
                 const init = async () => {
                     if (!window.FirebaseBridge) return;
@@ -152,8 +122,8 @@
                         onAuthStateChanged(auth, (currentUser) => {
                             if (currentUser) {
                                 setUser(currentUser);
-                                // 짝수 주소 규칙 준수: artifacts(1)/appId(2)/public(3)/data(4)/main(5)/dashboardData(6)
-                                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'main', 'dashboardData');
+                                // 데이터 주소를 짝수(6개 세그먼트)로 교정하여 에러 방지
+                                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'main', 'dashboard');
                                 onSnapshot(docRef, (snap) => {
                                     if (snap.exists()) {
                                         const data = snap.data();
@@ -169,20 +139,20 @@
                                         };
                                         setDoc(docRef, initial);
                                     }
-                                }, (err) => setError("데이터 읽기 권한이 없습니다. Firestore 규칙을 확인하세요."));
+                                }, (err) => setError("데이터 읽기 권한이 없습니다. Firestore 규칙 설정을 다시 확인하세요."));
                             }
                         });
-                    } catch (e) { setError("로그인 실패: " + e.message); }
+                    } catch (e) { setError("연결 실패: " + e.message); }
                 };
 
-                const check = setInterval(() => { if(window.FirebaseBridge) { clearInterval(check); init(); } }, 500);
-                return () => clearInterval(check);
+                const timer = setInterval(() => { if(window.FirebaseBridge) { clearInterval(timer); init(); } }, 500);
+                return () => clearInterval(timer);
             }, []);
 
             const saveToCloud = async (newFunnel, newRecords) => {
                 if (!window.FirebaseBridge || !user) return;
                 const { db, appId, setDoc, doc } = window.FirebaseBridge;
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'main', 'dashboardData');
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'main', 'dashboard');
                 await setDoc(docRef, {
                     funnelData: newFunnel || funnelData,
                     monthlyRecords: newRecords || monthlyRecords
@@ -211,11 +181,9 @@
 
             const totalReq = monthlyRecords.reduce((acc, curr) => acc + Number(curr.firstRequest || 0), 0);
             const parsePct = (val) => Number(String(val).replace('%','')) || 0;
-            const avgFree = monthlyRecords.length > 0 ? (monthlyRecords.reduce((a,c)=>a+parsePct(c.free3rdCVR),0)/monthlyRecords.length).toFixed(1) : "0";
-            const avgM3 = monthlyRecords.length > 0 ? (monthlyRecords.reduce((a,c)=>a+parsePct(c.m3Retention),0)/monthlyRecords.length).toFixed(1) : "0";
 
             if (error) return <div className="h-screen flex flex-col items-center justify-center bg-rose-50 text-rose-600 p-10 text-center font-bold">⚠️ 설정 필요<br/><br/>{error}</div>;
-            if (!user) return <div className="h-screen flex flex-col items-center justify-center bg-[#F0F2F5] text-emerald-500 font-black"><div className="animate-bounce mb-4 text-4xl">L</div>데이터 금고 연결 중...</div>;
+            if (!user) return <div className="h-screen flex flex-col items-center justify-center bg-[#F0F2F5] text-emerald-500 font-black"><div className="animate-bounce mb-4 text-4xl">L</div>데이터 연결 중...</div>;
 
             return (
                 <div className="min-h-screen p-6 lg:p-10">
@@ -226,7 +194,7 @@
                                 <div><h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">LaundryGo Growth</h1><p className="text-sm text-emerald-600 font-extrabold uppercase tracking-[0.4em]">Team Collaboration Mode</p></div>
                             </div>
                             <div className="bg-white px-8 py-5 rounded-[2.5rem] shadow-xl border border-white flex items-center justify-between w-[340px]">
-                                <div className="flex items-center gap-4"><Icon name="Calendar" size={24} className="text-emerald-500" /><div><p className="text-[11px] font-black text-gray-400 mb-1">ACTIVE MONTH</p><p className="text-2xl font-black text-emerald-500">2026.03</p></div></div>
+                                <div className="flex items-center gap-4"><Icon name="Calendar" size={24} className="text-emerald-500" /><div><p className="text-[11px] font-black text-gray-400 mb-1">MONTH</p><p className="text-2xl font-black text-emerald-500">2026.03</p></div></div>
                                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div><span className="text-[10px] font-black text-emerald-500 uppercase italic">Online</span></div>
                             </div>
                         </header>
@@ -235,12 +203,15 @@
                             <div className="w-[240px] bg-white/60 p-10 rounded-[48px] border border-white shadow-sm flex flex-col justify-center items-center text-center min-h-[1050px]">
                                 <Icon name="Truck" size={36} className="text-emerald-500 mb-4" /><h3 className="text-lg font-black text-gray-800 mb-1 uppercase">1. 첫 수거신청</h3>
                                 <div className="mb-10 font-black text-emerald-600 text-4xl tracking-tighter font-montserrat">{totalReq.toLocaleString()}</div>
-                                <button onClick={() => window.open('https://docs.google.com/spreadsheets/', '_blank')} className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black flex items-center justify-center gap-2 shadow-lg hover:bg-black transition-all uppercase font-montserrat tracking-widest"><Icon name="LayoutGrid" size={14} /> 실시간 시트</button>
+                                <button onClick={() => window.open('https://docs.google.com/spreadsheets/', '_blank')} className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black flex items-center justify-center gap-2 shadow-lg hover:bg-black transition-all font-montserrat uppercase tracking-widest"><Icon name="LayoutGrid" size={14} /> 실시간 시트</button>
                             </div>
                             <div className="flex items-center justify-center px-2"><Icon name="ChevronRight" size={28} className="text-gray-300" /></div>
                             <div className="flex-1 flex flex-col gap-6">
                                 <div className="h-[512px] bg-white p-10 rounded-[48px] border border-emerald-100 shadow-2xl flex flex-col overflow-hidden">
-                                    <div className="flex justify-between items-start mb-10"><div className="flex items-center gap-5"><div className="p-4 rounded-[1.5rem] bg-emerald-500 text-white shadow-lg"><Icon name="Zap" size={28} /></div><div><h3 className="text-2xl font-black text-gray-900 italic font-nanum">2. 자유 이용 퍼널</h3><p className="text-[12px] text-emerald-600 font-black uppercase">N-Times Retention</p></div></div><div className="px-5 py-3 bg-emerald-600 text-white rounded-[1.5rem] font-black shadow-lg text-sm font-montserrat tracking-tighter uppercase">GOAL 25.6%</div></div>
+                                    <div className="flex justify-between items-start mb-10 shrink-0">
+                                        <div className="flex items-center gap-5"><div className="p-4 rounded-[1.5rem] bg-emerald-500 text-white shadow-lg"><Icon name="Zap" size={28} /></div><div><h3 className="text-2xl font-black text-gray-900 italic font-nanum">2. 자유 이용 퍼널</h3><p className="text-[12px] text-emerald-600 font-black uppercase">N-Times Retention</p></div></div>
+                                        <div className="px-5 py-3 bg-emerald-600 text-white rounded-[1.5rem] font-black shadow-lg text-sm tracking-tighter uppercase">GOAL 25.6%</div>
+                                    </div>
                                     <div className="grid grid-cols-3 gap-6 flex-1 overflow-y-auto pr-2 custom-scrollbar pb-2">
                                         {['1회차', '2회차', '3회차'].map(s => (
                                             <div key={s} className="flex flex-col gap-3">
@@ -251,7 +222,7 @@
                                     </div>
                                 </div>
                                 <div className="h-[512px] bg-[#1A1C1E] p-10 rounded-[48px] shadow-2xl flex flex-col overflow-hidden">
-                                    <div className="flex justify-between items-start mb-10 shrink-0"><div className="flex items-center gap-5"><div className="p-4 rounded-[1.5rem] bg-blue-500 text-white shadow-lg"><Icon name="RotateCcw" size={28} /></div><div><h3 className="text-2xl font-black text-white italic font-nanum">3. 구독 리텐션 퍼널</h3><p className="text-[12px] text-blue-400 font-black uppercase font-montserrat tracking-widest">Monthly Recurring</p></div></div><div className="px-5 py-3 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-lg text-sm font-montserrat tracking-tighter uppercase">GOAL M3 59%</div></div>
+                                    <div className="flex justify-between items-start mb-10 shrink-0"><div className="flex items-center gap-5"><div className="p-4 rounded-[1.5rem] bg-blue-500 text-white shadow-lg"><Icon name="RotateCcw" size={28} /></div><div><h3 className="text-2xl font-black text-white italic font-nanum">3. 구독 리텐션 퍼널</h3><p className="text-[12px] text-blue-400 font-black uppercase tracking-widest">Monthly Recurring</p></div></div><div className="px-5 py-3 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-lg text-sm tracking-tighter uppercase">GOAL M3 59%</div></div>
                                     <div className="grid grid-cols-3 gap-6 flex-1 overflow-y-auto pr-2 custom-scrollbar pb-2">
                                         {['M1', 'M2', 'M3'].map(s => (
                                             <div key={s} className="flex flex-col gap-3">
@@ -299,22 +270,22 @@
                                 <tbody className="text-sm font-bold text-gray-800">
                                     {monthlyRecords.map((r) => (
                                         <tr key={r.id} className="border-b border-gray-50 group hover:bg-gray-50/50">
-                                            <td className="py-5 px-4"><input type="text" value={r.month} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, month: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent font-black outline-none w-24"/></td>
-                                            <td className="py-5 px-4 text-emerald-600 font-bold"><input type="number" value={r.firstRequest} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, firstRequest: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent outline-none w-20"/> 건</td>
-                                            <td className="py-5 px-4"><input type="text" value={r.free3rdCVR} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, free3rdCVR: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent outline-none w-16"/></td>
-                                            <td className="py-5 px-4 text-blue-500"><input type="text" value={r.m3Retention} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, m3Retention: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent outline-none w-16"/></td>
+                                            <td className="py-5 px-4 font-montserrat"><input type="text" value={r.month} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, month: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent font-black outline-none w-24"/></td>
+                                            <td className="py-5 px-4 text-emerald-600 font-bold font-montserrat"><input type="number" value={r.firstRequest} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, firstRequest: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent outline-none w-20"/> 건</td>
+                                            <td className="py-5 px-4 font-montserrat"><input type="text" value={r.free3rdCVR} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, free3rdCVR: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent outline-none w-16"/></td>
+                                            <td className="py-5 px-4 text-blue-500 font-montserrat"><input type="text" value={r.m3Retention} onChange={(e) => { const updated = monthlyRecords.map(rec => rec.id === r.id ? {...rec, m3Retention: e.target.value} : rec); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="bg-transparent outline-none w-16"/></td>
                                             <td className="py-5 px-4"><span className={`px-3 py-1 rounded-full text-[10px] font-black ${r.status === '마감' ? 'bg-gray-100 text-gray-400' : 'bg-emerald-100 text-emerald-600 uppercase'}`}>{r.status}</span></td>
-                                            <td className="py-5 px-4 text-right"><button onClick={() => { const updated = monthlyRecords.filter(rec => rec.id !== r.id); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="p-2 text-gray-200 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all font-montserrat font-bold"><Trash2 size={16} /></button></td>
+                                            <td className="py-5 px-4 text-right"><button onClick={() => { const updated = monthlyRecords.filter(rec => rec.id !== r.id); setMonthlyRecords(updated); saveToCloud(null, updated); }} className="p-2 text-gray-200 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all font-montserrat font-bold">X</button></td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot className="bg-gray-50/80 border-t-2 border-gray-100 font-black">
                                     <tr>
-                                        <td className="py-5 px-4 text-gray-400 text-[11px] uppercase tracking-widest">TOTAL / AVG</td>
-                                        <td className="py-5 px-4 text-emerald-600 text-lg">{totalReq.toLocaleString()} 건</td>
-                                        <td className="py-5 px-4 text-gray-900">{avgFree}%</td>
-                                        <td className="py-5 px-4 text-blue-500">{avgM3}%</td>
-                                        <td colSpan="2" className="text-right px-4 text-[10px] text-gray-300 uppercase italic tracking-widest">Cloud Synced</td>
+                                        <td className="py-5 px-4 text-gray-400 text-[11px] uppercase tracking-widest font-montserrat">TOTAL / AVG</td>
+                                        <td className="py-5 px-4 text-emerald-600 text-lg font-montserrat font-black">{totalReq.toLocaleString()} 건</td>
+                                        <td className="py-5 px-4 text-gray-900 font-montserrat font-black">{(monthlyRecords.reduce((a,c)=>a+parsePct(c.free3rdCVR),0)/(monthlyRecords.length||1)).toFixed(1)}%</td>
+                                        <td className="py-5 px-4 text-blue-500 font-montserrat font-black">{(monthlyRecords.reduce((a,c)=>a+parsePct(c.m3Retention),0)/(monthlyRecords.length||1)).toFixed(1)}%</td>
+                                        <td colSpan="2" className="text-right px-4 text-[10px] text-gray-300 uppercase italic font-montserrat">Cloud Synced</td>
                                     </tr>
                                 </tfoot>
                             </table></div>
@@ -322,7 +293,7 @@
 
                         <div className="mt-8 flex justify-between items-center px-8 border-t border-gray-200 pt-12 opacity-40 pb-12 font-montserrat">
                             <div className="flex items-center gap-5 italic font-black text-gray-400 text-xs tracking-widest uppercase">
-                                <Icon name="BarChart3" size={18} /> LaundryGo Growth Strategy Map v7.1 (Cloud Shared)
+                                <Icon name="BarChart3" size={18} /> LaundryGo Growth Map v7.2 (Real-time Cloud)
                             </div>
                         </div>
                     </div>
